@@ -1,0 +1,32 @@
+(define-record-procedures tasse
+  make-tasse
+  tasse?
+  (tasse-V
+   tasse-farb))
+
+
+(define geschierstücke
+  (signature (mixed teller tasse)))
+(: same-color ((list-of geschierstücke) -> boolean))
+(check-expect (same-color (list teller1 tasse1)) #f)
+(check-expect (same-color (list  tasse1 teller1)) #f)
+(check-expect (same-color empty) #f)
+(define same-color
+  (lambda (xs)
+    (cond
+      ((empty? xs) #f)
+      ((tasse? (first xs)) (worker-sc xs (tasse-farb (first xs))))
+      ((teller? (first xs)) (worker-sc xs (teller-farb (first xs)))))))
+
+(: worker-sc ((list-of geschierstücke) string -> boolean))
+(define worker-sc
+  (lambda (xs s)
+    (cond ((tasse? (first xs)) (and (string=? (tasse-farb (first xs)) s) (worker-sc (rest xs) s)))
+          ((teller? (first xs)) (and (string=? (teller-farb (first xs)) s) (worker-sc (rest xs) s))))))
+
+(define teller1
+  (make-teller 23 "red"))
+(define tasse1
+  (make-tasse 23 "grau"))
+(define geschierstücke1
+  (list teller1 teller1 tasse1 teller1))

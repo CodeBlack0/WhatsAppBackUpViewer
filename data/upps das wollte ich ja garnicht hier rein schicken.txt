@@ -1,0 +1,111 @@
+package main;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class teststuff 
+{
+    public static void main(String[] args) 
+    {
+        System.out.println("[A] ---------------------------");
+        for (int i = 1; i < 8; i++) {
+            System.out.println(4 * sum(i));
+        }
+        System.out.println("[B.1] -------------------------");
+        int max = 0, c = 0;
+        List max_n = new ArrayList();
+        for (int i = 1; i < Math.pow(10, 6) + 1; i++) {
+            c = collatz(i, false);
+            if (c < 0)
+            {
+                System.out.println("FALSE");
+                break;
+            }
+            if (c >= max) {
+                if (c == max)
+                    max_n.add(i);
+                else {
+                    max_n.clear();
+                    max_n.add(i);
+                }
+                max = c;
+            }
+            if (i == Math.pow(10, 6) - 1) {
+                System.out.println("TRUE"); 
+                System.out.println("Max: " + max_n + " | len: " + max); 
+            }                   
+        }
+        // System.out.println("tl;dr --> TRUE");
+        System.out.println("[B.2] -------------------------");
+        for (int i = 1000; i < 1011; i++) {
+            System.out.println(i + ": " + collatz(i, false));
+        }
+        System.out.println("[B.3] -------------------------");
+        for (int i = 10; i < 20; i++) {
+            System.out.print(i + ": "); 
+            collatz(i, true);
+        }
+        System.out.println("[C] ---------------------------");
+        System.out.println("Double: " + polynomd(77617d, 33096d));
+        System.out.println("Float:  " + polynomf(77617f, 33096f));
+    }
+
+    public static double sum(int i) {
+        double result = 0;
+        for (int k = 0; k < Math.pow(10, i); k++) {
+            result += folge(k);
+        }
+        return result;
+    }
+
+    public static double folge(int k) {
+        return Math.pow(-1, k) / (2 * k + 1);
+    }
+
+    public static int collatz(double n, boolean print) {
+        double n1 = n, n2 = 0, n3 = 0;
+        int counter = 0;
+        int one_test = 0;
+        try {
+            do {
+                n3 = n2;
+                n2 = n1;
+                n1 = (n2 % 2 == 0) ? n2 / 2 : 3 * n2 + 1;
+                counter++;
+                if (print && one_test < 1)
+                    System.out.print((int)n1 + ", ");
+                if (one_test <= 1 && (n1 == 1 && n2 == 2 && n3 == 4))
+                    one_test++;
+            } while (one_test <= 1);
+            if (print)
+                System.out.println();
+            return counter - 3;                
+        } catch (Exception e) {
+            return -1;
+        }
+    }
+
+    public static float polynomf(float x, float y) {
+        return (333.75f * (float)Math.pow(y, 6f)) + 
+               (float)Math.pow(x, 2f) * 
+               (
+               11f * (float)Math.pow(x, 2f) * (float)Math.pow(y, 2f) -
+               (float)Math.pow(y, 6f) - 
+               121f * (float)Math.pow(y, 4f) - 2f
+               ) + 
+               5.5f * (float)Math.pow(y, 8f) + 
+               x / (2f * y);
+    }
+
+    public static double polynomd(double x, double y) {
+        return (333.75d * Math.pow(y, 6d)) + 
+               Math.pow(x, 2d) * 
+               (
+               11d * Math.pow(x, 2d) * Math.pow(y, 2d) -
+               Math.pow(y, 6d) - 
+               121d * Math.pow(y, 4d) - 2d
+               ) + 
+               5.5d * Math.pow(y, 8d) + 
+               x / (2d * y);
+    }
+}

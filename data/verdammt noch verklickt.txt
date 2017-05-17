@@ -1,0 +1,73 @@
+package main;
+
+import java.util.HashSet;
+import java.util.Set;
+
+public class Optimize {
+
+    public static final double A = 5;
+    public static final double B = -2;
+    public static final double increment = 0.00001;
+    public static final double accuracy = 0.00000001;
+    public static final double n = 0.001;
+    public static final double[] check = {1d,4d,6d,11d};
+
+
+    public static void main(String[] args) {
+        for (int i = 0; i < 2; i++) {
+            Set res = new HashSet();
+            System.out.println("FUNC " + i + ": ");
+            for (double val : check) {
+                double temp = optimize(i, val);
+                res.add(round(temp, 100));     
+                System.out.println("x = " + val + " \t-> " + temp);
+            }
+            System.out.println(res);
+        }
+    }
+    
+    public static double round(double x, long factor) {
+        return (double) Math.round(x * factor) / factor;
+    }
+    
+    public static double optimize(int func, double x0) {
+        double prev, cur = x0;
+        do {
+            prev = cur;
+            cur = prev - n * numericalGradient(func, prev);
+        } while (Math.abs(cur - prev) >= accuracy);
+        return prev;
+    }
+
+    public static double evalFunc(int func, double x) {
+        if(func==0)
+            return f1(x);
+        return f2(x);				
+    }
+
+    public static double f1(double x) {
+        return     1.84 
+                + (1.42   * x) 
+                - (2.4    * exp(x, 2)) 
+                + (0.91   * exp(x, 3)) 
+                - (0.124  * exp(x, 4))
+                + (0.0055 * exp(x, 5));
+    }
+
+    public static double f2(double x) {
+        return exp((x - A), 2) + B;
+    }	
+
+    public static double numericalGradient(int func, double x) {
+        return (evalFunc(func, (x + increment)) - evalFunc(func, (x - increment))) 
+                / (2 * increment);
+    }
+
+    public static double exp(double x, int i) {
+        double res = x;
+        for (int j = 1; j < i; j++) {
+            res *= x;
+        }
+        return res;
+    }
+}
