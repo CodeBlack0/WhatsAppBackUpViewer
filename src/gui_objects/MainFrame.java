@@ -2,15 +2,10 @@ package gui_objects;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import gui_objects.MessageTD;
 import javafx.beans.binding.DoubleBinding;
 import javafx.geometry.Orientation;
-import javafx.scene.Group;
-import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
-import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Separator;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToolBar;
@@ -19,7 +14,6 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.RowConstraints;
-import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import message.Message;
 
@@ -27,13 +21,16 @@ public class MainFrame {
 	private Scene scene;
 	private List<Message> messages;
 	
+	private Button nextSearchRsltBtn;
+	private Button prevSearchRsltBtn;
+	
 	private MessagesPane scrPne ;
 	
 	public MainFrame(Stage primaryStage, List<Message> messages){
 		this.messages = messages;
 		
 		GridPane vBox = new GridPane();
-		
+				
 		scene = new Scene(vBox, 800, 600);
 		
 		ToolBar toolBar = getToolBar();
@@ -87,26 +84,42 @@ public class MainFrame {
 		imgVw.setRotate(rotate);
 		return new Button("", imgVw);
 	}
+	private String lastSearchTxt = "";
 	private ToolBar getToolBar(){
 		ToolBar toolBar = new ToolBar();
 		
 		TextField seachTxtFld = new TextField("");
 		seachTxtFld.setOnAction(t->{
-			SearchForText( seachTxtFld.getText() );
+			if ( lastSearchTxt.equals( seachTxtFld.getText()) ){
+				scrPne.focusNextSearchResult();
+			}else{
+				lastSearchTxt = seachTxtFld.getText();
+				SearchForText( lastSearchTxt );
+			}
 		});
-		
+				
 		Button loupeBtn = getButton("pics/loupe_small.png");
 		loupeBtn.setOnAction(t->{
-			SearchForText( seachTxtFld.getText() );
+			if ( lastSearchTxt.equals( seachTxtFld.getText()) ){
+				scrPne.focusNextSearchResult();
+			}else{
+				lastSearchTxt = seachTxtFld.getText();
+				SearchForText( lastSearchTxt );
+			}
 		});
 		
-		Button nextSearchRsltBtn = getButton("pics/next.png", 90);
-		loupeBtn.setOnAction(t->{
-			SearchForText( seachTxtFld.getText() );
+		nextSearchRsltBtn = getButton("pics/next.png", 90);
+		nextSearchRsltBtn.setOnAction(t->{
+			scrPne.focusNextSearchResult();
 		});
-		Button prevSearchRsltBtn = getButton("pics/next.png", -90);
-		loupeBtn.setOnAction(t->{
-			SearchForText( seachTxtFld.getText() );
+		prevSearchRsltBtn = getButton("pics/next.png", -90);
+		prevSearchRsltBtn.setOnAction(t->{
+			scrPne.focusPrevSearchResult();
+		});
+		
+		Button loadDataBtn = getButton("pics/refresh_small.png");
+		loadDataBtn.setOnAction(t->{
+//			MainWAH.loadDataFromServer();
 		});
 		
 		seachTxtFld.minHeightProperty().bind(loupeBtn.heightProperty());
@@ -114,20 +127,27 @@ public class MainFrame {
 		toolBar.getItems().addAll(
 				seachTxtFld,
 				loupeBtn,
-				nextSearchRsltBtn,
 				prevSearchRsltBtn,
-				new Separator(Orientation.VERTICAL)
+				nextSearchRsltBtn,
+				new Separator(Orientation.VERTICAL),
+				loadDataBtn
 		);
 		return toolBar;
 	}
 	
 	private void SearchForText(String searchTxt){
+		searchTxt = searchTxt.toLowerCase();
 		List<Integer> treffer = new ArrayList<>();
-//		for(int i=0; i < messages.size(); i++){
-//			if (messages.get(i).getText().contains(searchTxt)){
-//				treffer.add(i);
-//			}
-//		}
+		for(int i=0; i < messages.size(); i++){
+			if (messages.get(i).get_content().toLowerCase().contains(searchTxt)){
+				treffer.add(i);
+			}
+		}
+		
+		boolean disblSearBtns = treffer.size() == 0;
+		nextSearchRsltBtn.setDisable(disblSearBtns);
+		prevSearchRsltBtn.setDisable(disblSearBtns);
+		
 		scrPne.setSearchResults(treffer);
 	}
 }
