@@ -61,6 +61,7 @@ public class MainFrame {
 				return scene.getWidth();
 			}
 		};
+		
 		ColumnConstraints colConstr = new ColumnConstraints();
 		colConstr.prefWidthProperty().bind(colDB);
 		
@@ -70,6 +71,10 @@ public class MainFrame {
 		
 		vBox.add(toolBar, 0,0);
 		vBox.add(scrPne , 0,1);
+		
+		primaryStage.setMinWidth(350);
+		
+		scene.getStylesheets().add(getClass().getResource("application.css").toExternalForm());
 		
 		primaryStage.setScene(scene);
 		primaryStage.show();
@@ -97,6 +102,17 @@ public class MainFrame {
 				SearchForText( lastSearchTxt );
 			}
 		});
+		
+		scene.widthProperty().addListener(t->{
+			double width = scene.getWidth() * 0.5;
+			if (width > 600)
+				width = 600;
+			if (width < 50)
+				width = 50;
+
+			seachTxtFld.setPrefWidth(width);
+		});
+		
 				
 		Button loupeBtn = getButton("pics/loupe_small.png");
 		loupeBtn.setOnAction(t->{

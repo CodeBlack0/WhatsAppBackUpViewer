@@ -7,12 +7,13 @@ import javafx.beans.binding.DoubleBinding;
 import javafx.geometry.Orientation;
 import javafx.scene.Scene;
 import javafx.scene.control.ScrollBar;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.RowConstraints;
 import message.Message;
 
-public class MessagesPane extends GridPane{
+public class MessagesPane extends BorderPane{
 //	private List<Message> messages;
 	private MessagesScrollPane scrPne;
 	
@@ -57,38 +58,8 @@ public class MessagesPane extends GridPane{
 		    });
 		});
 		
-		this.add(scrPne, 0, 0);
-		this.add(scrBr, 1, 0);
-		
-		DoubleBinding heightDB = new DoubleBinding(){
-			{
-				super.bind(MessagesPane.this.heightProperty());
-			}
-			@Override
-			protected double computeValue() {
-				return MessagesPane.this.getHeight();
-			}
-			
-		};
-		
-		RowConstraints rowConstr = new RowConstraints();
-		rowConstr.prefHeightProperty().bind(heightDB);
-		
-		ColumnConstraints ScrBarColConstr = new ColumnConstraints(20);
-		DoubleBinding scrPneColDB = new DoubleBinding(){
-			{
-				super.bind(MessagesPane.this.widthProperty());
-			}
-			@Override
-			protected double computeValue() {
-				return MessagesPane.this.getWidth() - ScrBarColConstr.getPrefWidth();
-			}
-		};
-		ColumnConstraints ScrPneColConstr = new ColumnConstraints();
-		ScrPneColConstr.prefWidthProperty().bind(scrPneColDB);
-		
-		this.getRowConstraints().add(rowConstr);
-		this.getColumnConstraints().addAll(ScrPneColConstr, ScrBarColConstr);
+		this.setCenter(scrPne);
+		this.setRight(scrBr);
 	}
 	
 	public void setSearchResults(List<Integer> treffer){

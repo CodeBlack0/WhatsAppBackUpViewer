@@ -50,7 +50,7 @@ public class MessageTD extends Group{
 		SimpleDateFormat df2 = new SimpleDateFormat("dd.MM.yy HH:mm:ss");
         return df2.format(date);
 	}
-	public MessageTD(Message message, CursorSetter cursorSetter){
+	public MessageTD(Message message, CursorSetter cursorSetter, double width){
 		super();
 		this.message = message;
 		if (message != null){
@@ -124,7 +124,7 @@ public class MessageTD extends Group{
 					attRct.setWidth(300);
 					attRct.setHeight(100);
 					
-					attRct.setFill(Color.CYAN);
+					attRct.setFill(new Color(1d,1d,1d,0.4d));
 									
 					final ImageView imgVw = new ImageView();
 					
@@ -226,20 +226,25 @@ public class MessageTD extends Group{
 				Text txtArea = new Text();
 				if (message.getClass() == TextMessage.class){
 					backgrRct.setFill(new Color(0.7d, 1.0d, 0.7d, 1.0d));//Color.LIME);
-					txtArea.setText( ((TextMessage)message).get_content() );
+					txtArea.setText( ((TextMessage)message).get_message() );
 				}else if(message.getClass() == ServerMessage.class){
 					backgrRct.setFill(new Color(1.0d, 0.9d, 0.9d, 1.0d));
-					txtArea.setText( ((ServerMessage)message).get_content() );
+					txtArea.setText( ((ServerMessage)message).get_action() );
 				}
-							
+				
 	//			txtArea.setEditable(false);
 	//			txtArea.setMaxWidth(500);
 	//			txtArea.setWrapText(true);
-				txtArea.setWrappingWidth(500);
+				txtArea.setWrappingWidth(width);
 				
 				double insets = 5d;
+				
+				double backgrWidth = txtArea.getBoundsInLocal().getWidth()  + 2d*insets;
+				if (backgrWidth < width){
+					backgrWidth = width;
+				}
 						
-				backgrRct.setWidth(  txtArea.getBoundsInLocal().getWidth()  + 2d*insets);
+				backgrRct.setWidth(  backgrWidth );
 	//			backgrRct.setHeight( txtArea.getBoundsInLocal().getHeight() + 2d*insets);
 				backgrRct.setArcWidth(20);
 				backgrRct.setArcHeight(20);
@@ -259,6 +264,7 @@ public class MessageTD extends Group{
 				
 				double yOffs = insets;
 				
+				lbl.setLayoutX(4);
 				lbl.setLayoutY( yOffs + lbl.getBaselineOffset() );
 				
 				yOffs = lbl.getBoundsInLocal().getHeight() + 5;

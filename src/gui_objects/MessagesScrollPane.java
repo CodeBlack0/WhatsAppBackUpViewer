@@ -4,12 +4,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 import gui_objects.MessagesPane.ScrBarValueSetter;
+import javafx.geometry.Insets;
 import javafx.scene.Cursor;
 import javafx.scene.Group;
 import javafx.scene.Scene;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.input.KeyCode;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.Background;
+import javafx.scene.layout.BackgroundFill;
+import javafx.scene.layout.CornerRadii;
 import javafx.scene.layout.Pane;
+import javafx.scene.paint.Color;
 import message.Message;
 
 public class MessagesScrollPane extends Pane {
@@ -40,8 +45,13 @@ public class MessagesScrollPane extends Pane {
 		}
 	}
 	
+	private int backgrImgId = 1;
+	private ImageView backgrImgVw;
+	
 	public MessagesScrollPane(List<Message> messages, final Scene scene, final ScrBarValueSetter scrBarValSetter){
 		super();
+		
+		this.setBackground(new Background(new BackgroundFill(Color.web("#FFFFFF"), CornerRadii.EMPTY, Insets.EMPTY)));
 		this.messages = messages;
 		this.scene = scene;
 		this.scrBarValSetter = scrBarValSetter;
@@ -71,51 +81,53 @@ public class MessagesScrollPane extends Pane {
 		this.setOnMouseExited(t->{
 			scene.setCursor(Cursor.DEFAULT);
 		});
-		evalMessageDimensions();
 		
-		this.getChildren().add(scrPneGrp);
+		backgrImgVw = new ImageView(new Image("file:pics/backgrnd1.jpg"));
+		this.widthProperty().addListener(t->{
+			properBackgroundID();
+		});
+		this.heightProperty().addListener(t->{
+			properBackgroundID();
+		});
+		this.getChildren().addAll(backgrImgVw, scrPneGrp);
 		
 		this.heightProperty().addListener(t->{
+			renderMessages();
+		});
+		
+		this.widthProperty().addListener(t->{
 			renderMessages();
 		});
 		
 		renderMessages();
 	}
 	
-	private void evalMessageDimensions(){
-		if (messages != null && messageDims != null){
-			maxWidth = 0;
-			maxHeight = 0;
-			messageDims.clear();
-			for(int i=0; i < messages.size(); i++){
-				MessageTD msgTD = new MessageTD(messages.get(i), null);
-				messageDims.add( new Dim(msgTD.getBoundsInLocal().getWidth(),
-										 msgTD.getBoundsInLocal().getHeight()));
-				maxHeight += msgTD.getBoundsInLocal().getHeight();
-				double curWidth = msgTD.getBoundsInLocal().getWidth();
-				if (curWidth > maxWidth){
-					maxWidth = curWidth;
-				}
-				msgTD.close();
-			}
+	private void properBackgroundID(){
+		int xID = 0, yID = 0;
+		if (scene.getWidth() > 1800){
+			xID = 3;
+		}else if (scene.getWidth() > 1200){
+			xID = 2;
+		}else{
+			xID = 1;
+		}
+		if (scene.getHeight() > 1490){
+			yID = 3;
+		}else if (scene.getHeight() > 990){
+			yID = 2;
+		}else{
+			yID = 1;
 		}
 		
+		int id = Math.max(xID, yID);
+		
+		if (backgrImgId != id){
+			backgrImgId = id;
+			backgrImgVw.setImage(new Image("file:pics/backgrnd" + id + ".jpg"));
+		}
 	}
-//	private int getMessageVvalID(double absVvalue){
-//		double yOffs = 0;
-//		for(int i=0; i < messageDims.size(); i++){
-//			if (yOffs >= absVvalue){
-//				return i;
-//			}
-//			yOffs += messageDims.get(i).height;
-//		}
-//		return -1;
-//	}
 	
 	public void setVValueBD(int msgId){
-//		double startHeight = vValue * (maxHeight-this.getHeight());
-		
-//		int msgId = getMessageVvalID(startHeight);
 		if (messages != null &&
 				msgId > -1 && msgId < messages.size()){
 			firstDispMsgIndx = msgId;
@@ -136,7 +148,7 @@ public class MessagesScrollPane extends Pane {
 			for(int i=firstDispMsgIndx; i < messages.size(); i++){
 				MessageTD msgTD = new MessageTD(messages.get(i), cursor->{
 					scene.setCursor(cursor);
-				});
+				}, this.getWidth()-50);
 				
 				curDipsMsgs.add(msgTD);
 				
