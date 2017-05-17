@@ -76,11 +76,11 @@ public class WhatsAppBackUpViewer extends Application {
             // 1. read from file structure: 
             // filePath == filepath of _chat.txt-file
             try(BufferedReader reader = new BufferedReader(new FileReader(new File(filePath)))){
-                    return readChatTxtFromBfReader(reader);
+                return readChatTxtFromBfReader(reader);
             }catch(FileNotFoundException e){
-                    e.printStackTrace();
+                e.printStackTrace();
             }catch(IOException e){
-                    e.printStackTrace();
+                e.printStackTrace();
             }
 
             // 2. read from Zip:
