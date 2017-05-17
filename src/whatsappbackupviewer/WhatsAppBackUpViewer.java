@@ -27,8 +27,7 @@ public class WhatsAppBackUpViewer extends Application{
     @Override
     public void start(Stage primaryStage) throws Exception {
         messages = getMessages("G:\\files\\Downloads\\WhatsApp Chat - Informatik SS 2017 (15.05.17)\\_chat.txt");
-
-          // new gui_objects.MainFrame(primaryStage, messages);
+        new gui_objects.MainFrame(primaryStage, messages);
     }
 
     public static Message process_line(String line) {
