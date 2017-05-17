@@ -121,10 +121,10 @@ public class WhatsAppBackUpViewer extends Application {
                 msg = process_line(line);
                 if (msg == null) System.err.printf("msg-error! something went wrong at line: %s%n", counter);
                 messages.add( msg );
-            }else{
-//                  falls die derzeitige zeile keine message ist, kann sie (nach derzeitigem verstaendnis)
-//                  nur zusaetzlicher text des vorangeganegnen message-objekts sein -> damit muss das vorangegangene 
-//                  message objekt vom typ TextMessage sein:
+            } else {
+//              falls die derzeitige zeile keine message ist, kann sie (nach derzeitigem verstaendnis) 
+//              nur zusaetzlicher text des vorangeganegnen message-objekts sein -> damit muss das vorangegangene 
+//              message objekt vom typ TextMessage sein:
                 if (msg != null && msg.getClass() == TextMessage.class){
                     TextMessage txtMsg = (TextMessage)msg;
                     txtMsg.append_message( System.lineSeparator() + line );
