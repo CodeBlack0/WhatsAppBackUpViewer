@@ -123,7 +123,7 @@ public class MainWAH extends Application{
 		  
 		  while((line = reader.readLine()) != null){
 			  
-			  if (counter++ > 100)break;
+			  //if (counter++ > 100)break;
 			  
 			    line = processString(line);
 			    			  						  						
