@@ -1,5 +1,9 @@
 package whatsappbackupviewer;
 
+import message.TextMessage;
+import message.Message;
+import message.AttachmentMessage;
+import message.ServerMessage;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
