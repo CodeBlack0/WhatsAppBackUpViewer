@@ -47,7 +47,7 @@ public class MessagesScrollPane extends Pane {
 		this.scrBarValSetter = scrBarValSetter;
 		
 		this.setOnScroll(t->{
-			scrBarValSetter.setValue( t.getDeltaY() > 0 ? 1 : -1 );
+			scrBarValSetter.setValueOffset( t.getDeltaY() > 0 ? 1 : -1 );
 		});
 		// key up && down funktioniert noch nicht, da die toolbar staendig den fokus fuer sich beansrpucht...
 //		this.setOnKeyPressed(t->{
