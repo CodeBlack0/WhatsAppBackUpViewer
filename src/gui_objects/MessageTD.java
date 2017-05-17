@@ -3,9 +3,12 @@ package gui_objects;
 import java.awt.Desktop;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 
+import javax.swing.Icon;
 import javax.swing.filechooser.FileSystemView;
 
 import javafx.application.Platform;
@@ -14,10 +17,15 @@ import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.Cursor;
 import javafx.scene.Group;
 import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.control.Label;
+import javafx.scene.control.TextArea;
 import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Line;
 import javafx.scene.shape.Rectangle;
@@ -218,10 +226,10 @@ public class MessageTD extends Group{
 				Text txtArea = new Text();
 				if (message.getClass() == TextMessage.class){
 					backgrRct.setFill(new Color(0.7d, 1.0d, 0.7d, 1.0d));//Color.LIME);
-					txtArea.setText( ((TextMessage)message).get_content() );
+					txtArea.setText( ((TextMessage)message).get_message() );
 				}else if(message.getClass() == ServerMessage.class){
 					backgrRct.setFill(new Color(1.0d, 0.9d, 0.9d, 1.0d));
-					txtArea.setText( ((ServerMessage)message).get_content() );
+					txtArea.setText( ((ServerMessage)message).get_action() );
 				}
 							
 	//			txtArea.setEditable(false);
