@@ -37,13 +37,13 @@ public class WhatsAppBackUpViewer extends Application {
     private static List<Message> messages;
 
     public static void main(String[] args) {
-            launch(args);
+        launch(args);
     }
 
     @Override
     public void start(Stage primaryStage) throws Exception {
-            messages = getMessages("data/_chat.txt");
-            new gui_objects.MainFrame(primaryStage, messages);
+        messages = getMessages("data/_chat.txt");
+        new gui_objects.MainFrame(primaryStage, messages);
     }
 
     public static Message process_line(String line) {
@@ -108,56 +108,42 @@ public class WhatsAppBackUpViewer extends Application {
     }
 
     private static List<Message> readChatTxtFromBfReader(BufferedReader reader) throws IOException{
-            List<Message> messages = new ArrayList<>();
+        List<Message> messages = new ArrayList<>();
 
-              Message msg = null;
+        Message msg = null;
+        String line;
+        int counter = 0;
 
-              String line;
-
-              int counter = 0;
-
-              while((line = reader.readLine()) != null){
-
-                      //if (counter++ > 100)break;
-
-                        line = processString(line);
-
-                            if ( lineIsAMessage(line) ){
-
-                                    msg = process_line(line);
-
-                                    if (msg == null){
-                                            System.err.printf("msg-error! something went wrong at line: %s%n", counter);
-                                    }
-                                    messages.add( msg );
-                            }else{
-                                    // falls die derzeitige zeile keine message ist, kann sie (nach derzeitigem verstaendnis)
-                                    // nur zusaetzlicher text des vorangeganegnen message-objekts sein -> damit muss das vorangegangene 
-                                    // message objekt vom typ TextMessage sein:
-                                    if (msg != null && msg.getClass() == TextMessage.class){
-                                            TextMessage txtMsg = (TextMessage)msg;
-                                            txtMsg.append_message( System.lineSeparator() + line );
-                                    }else{
-                                            System.err.printf("Derzeitige line ist keine message, aber zuvorige line was auch keine TextMessage -> was also ist diese zeile???"
-                                                            + "%n		%s%n", line);
-                                    }
-                            }
-              }
-              return messages;
+        while((line = reader.readLine()) != null){
+//          if (counter++ > 100)break;
+            line = processString(line);
+            if ( lineIsAMessage(line) ){
+                msg = process_line(line);
+                if (msg == null) System.err.printf("msg-error! something went wrong at line: %s%n", counter);
+                messages.add( msg );
+            }else{
+//                  falls die derzeitige zeile keine message ist, kann sie (nach derzeitigem verstaendnis)
+//                  nur zusaetzlicher text des vorangeganegnen message-objekts sein -> damit muss das vorangegangene 
+//                  message objekt vom typ TextMessage sein:
+                if (msg != null && msg.getClass() == TextMessage.class){
+                    TextMessage txtMsg = (TextMessage)msg;
+                    txtMsg.append_message( System.lineSeparator() + line );
+                } else System.err.printf("Derzeitige line ist keine message, aber zuvorige line was auch keine TextMessage -> was also ist diese zeile???%n		%s%n", line);
+            }
+        }
+        return messages;
     }
 
     // checkt, ob eine zeile der anfang einer message ist (textmessage, servermessage etc.)
-    private static boolean lineIsAMessage(String line){
-            return Message.isServerevent(line) || Message.isAttachment(line) || Message.isText(line);
-    }
+    private static boolean lineIsAMessage(String line) { return Message.isServerevent(line) || Message.isAttachment(line) || Message.isText(line); }
 
     // in dem WhatsApp-backup-text-file ("_chat.txt") stecken einige schraege characters drin, dieser wird sich hier
     // entledigt:
-    private static String processString(String str){
-            return str.replaceAll(String.format("%s", (char)160), " ")
-                              .replaceAll(String.format("%s", (char)8234), "")
-                              .replaceAll(String.format("%s", (char)8236), "")
-                              .replaceAll(String.format("%s", (char)8206), "");
+    private static String processString(String str) {
+        return str.replaceAll(String.format("%s", (char)160), " ")
+                  .replaceAll(String.format("%s", (char)8234), "")
+                  .replaceAll(String.format("%s", (char)8236), "")
+                  .replaceAll(String.format("%s", (char)8206), "");
     }
 	
 //-------------------------------------------------------------------------------------------------------
