@@ -2,6 +2,7 @@ package gui_objects;
 
 import java.util.List;
 
+import javafx.application.Platform;
 import javafx.beans.binding.DoubleBinding;
 import javafx.geometry.Orientation;
 import javafx.scene.Scene;
@@ -15,20 +16,45 @@ public class MessagesPane extends GridPane{
 //	private List<Message> messages;
 	private MessagesScrollPane scrPne;
 	
+	interface ScrBarValueSetter{
+		void setValue(int val);
+		void setValueOffset(int offs);
+	}
+	
 	public MessagesPane(List<Message> messages, Scene scene){
 		super();
 		
 //		this.messages = messages;
 		
-		scrPne = new MessagesScrollPane(messages, scene);
-		
 		ScrollBar scrBr = new ScrollBar();
 		scrBr.setMin(0);
-		scrBr.setMax(1);
+		scrBr.setMax(messages.size());
 		scrBr.setOrientation(Orientation.VERTICAL);
 		
+		scrPne = new MessagesScrollPane(messages, scene, 
+				new ScrBarValueSetter(){
+					@Override
+					public void setValue(int val) {
+						scrBr.setValue( val );
+					}
+					@Override
+					public void setValueOffset(int offs) {
+						scrBr.setValue( (int)scrBr.getValue() +offs );
+					}
+				}
+		);
+		
 		scrBr.valueProperty().addListener(t->{
-			scrPne.setVValueBD(scrBr.getValue());
+			scrPne.setVValueBD((int)scrBr.getValue());
+		});
+		
+		this.setOnMouseMoved(t->{
+			Platform.runLater(new Runnable() {
+		        @Override
+		        public void run() {
+		        	MessagesPane.this.requestFocus();
+		        }
+		    });
 		});
 		
 		this.add(scrPne, 0, 0);
@@ -67,7 +93,12 @@ public class MessagesPane extends GridPane{
 	
 	public void setSearchResults(List<Integer> treffer){
 		scrPne.setSearchResults(treffer);
-		
+	}
+	public void focusNextSearchResult(){
+		scrPne.focusNextSearchResult();
+	}
+	public void focusPrevSearchResult(){
+		scrPne.focusPrevSearchResult();
 	}
 	public void close(){
 //		messages = null;
