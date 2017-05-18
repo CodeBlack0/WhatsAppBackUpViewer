@@ -73,7 +73,8 @@ public class MainWAH extends Application {
     
     private static List<Message> getMessages(String filePath){
         if (Files.exists(Paths.get(filePath))){
-            try(BufferedReader reader = new BufferedReader(new FileReader(new File(filePath)))){
+            try(BufferedReader reader = new BufferedReader(new InputStreamReader(
+	        	new FileInputStream(new File(filePath)), "UTF8"))){
                 return readChatTxtFromBfReader(reader);
             }catch(FileNotFoundException e){
                 e.printStackTrace();
