@@ -1,13 +1,13 @@
 package whatsappbackupviewer;
 
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.channels.Channels;
@@ -18,13 +18,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.List;
 import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
+import java.util.zip.ZipInputStream;
 
 import javafx.application.Application;
-import javafx.concurrent.Task;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import message.AttachmentMessage;
@@ -42,6 +40,7 @@ public class WhatsAppBackUpViewer extends Application {
 
     @Override
     public void start(Stage primaryStage) throws Exception {
+        loadDataFromServer();
         messages = getMessages("data/_chat.txt");
         new gui_objects.MainFrame(primaryStage, messages);
     }
@@ -149,96 +148,103 @@ public class WhatsAppBackUpViewer extends Application {
 //-------------------------------------------------------------------------------------------------------
 
     public static void loadDataFromServer(){
+        String oldVersTmpFle = "res/version.txt";
+        String newVersTmpFle = "temp/version.txt";
+        String zipFilePath = "res/data.zip";
+        String version_url = "https://www.dropbox.com/s/pv5xtkh6fz7f7cf/version.txt?dl=1";
+        String zip_url = "https://www.dropbox.com/s/oijpgcle4615iq5/WAChatBackup.zip?dl=1";
+        String data_dir = "data";
 
-        new Thread(new Task<Void>(){
-            @Override
-            protected Void call() throws Exception {
-                String oldVersTmpFle = "res/version.txt";
-                String newVersTmpFle = "temp/version.txt";
-                String url = "https://www.dropbox.com/s/pv5xtkh6fz7f7cf/version.txt?dl=0";
+        try{
+            System.out.println("Getting new version file from: " + version_url);
+            downloadFromDropbox(version_url, newVersTmpFle);
 
-                try{
-                    downloadFromDropbox(url, newVersTmpFle);
-
-                    File versFle = new File(newVersTmpFle);
-                    if (versFle.exists()){
-                        try(BufferedReader readerNew = new BufferedReader(new FileReader(versFle))){
-                            try(BufferedReader readerOld = new BufferedReader(new FileReader(oldVersTmpFle))){
-                                String versionNew = readerNew.readLine();
-                                String versionOld = readerOld.readLine();
-
-                                System.out.printf("versionNew: %s%n", versionNew);
-
-                                if ( !versionNew.equals(versionOld) ){
-                                    Path from = Paths.get(newVersTmpFle); 
-                                    Path to   = Paths.get(oldVersTmpFle); 
-                                    Files.copy(from, to, StandardCopyOption.REPLACE_EXISTING);
-                                    Files.delete(from);
-                                }
-
-                                url = "https://www.dropbox.com/s/oijpgcle4615iq5/WAChatBackup.zip?dl=0";
-                                String zipFilePath = "res/data.zip";
-
-                                downloadFromDropbox(url, zipFilePath);
-
-                                List<String> oldFlNms = new ArrayList<>();
-                                Path path = Paths.get("data");
-                                try(DirectoryStream<Path> stream = Files.newDirectoryStream(path)){
-                                    for (Path entry : stream){
-                                        oldFlNms.add(entry.getFileName().toString());
-                                    }
-                                    stream.close();
-                                }
-
-                                try (ZipFile zf = new ZipFile( zipFilePath )){
-                                    for ( Enumeration<? extends ZipEntry> e = zf.entries(); e.hasMoreElements(); ){
-                                        ZipEntry entry = e.nextElement();
-
-                                        if ( !oldFlNms.contains(entry.getName()) ){
-//						if (entry.getName().equals("_chat.txt")){
-//								  
-//						} else {
-                                                String fileSep = File.separator;
-                                                String tarFileName = String.format("data%s%s", fileSep, entry.getName());
-                                                InputStream is = zf.getInputStream( entry );
-                                                OutputStream os = new FileOutputStream(tarFileName, false);
-                                                writeFile(is, os);
-//						}
-                                        }
-                                    }
-                                } catch (IOException e1) {
-                                    e1.printStackTrace();
-                                }
-                            }
-                        } catch(FileNotFoundException e) {
-                                e.printStackTrace();
-                        } catch(IOException e) {
-                                e.printStackTrace();
-                        }
-                    }
-                } catch(MalformedURLException e) {
-                        return null;
-                } catch(IOException e) {
-                        return null;
+            // get version file
+            File versFle = new File(newVersTmpFle);
+            // if it exists...
+            if (versFle.exists()){
+                System.out.println("Got version, proceeding to checking it's content.");
+                // ...check if it's the newest version
+                String versionNew, versionOld;
+                try(BufferedReader readerNew = new BufferedReader(new FileReader(versFle))){
+                    try(BufferedReader readerOld = new BufferedReader(new FileReader(oldVersTmpFle))){
+                        versionNew = readerNew.readLine();
+                        versionOld = readerOld.readLine();
+                        System.out.printf("versionOld: %s%n", versionOld);
+                        System.out.printf("versionNew: %s%n", versionNew);
+                    } catch(FileNotFoundException e) { e.printStackTrace(); return; } 
+                      catch(IOException e) { e.printStackTrace(); return; }
+                } catch(MalformedURLException e) { return; }
+                  catch(IOException e) { return; }
+                
+                if ( !versionNew.equals(versionOld) ){
+                    System.out.println("Not newest version.");
+                } else {
+                    System.out.println("Already have the newest version.");
+                    return;
                 }
-                return null;
-            }	
-        }).start();
+
+                // if it was not the newest version download and process the zip
+                System.out.println("Getting the newer zip from: " + zip_url);
+                downloadFromDropbox(zip_url, zipFilePath);
+                List<String> oldFlNms = new ArrayList<>();
+                Path path = Paths.get("data");
+                try(DirectoryStream<Path> stream = Files.newDirectoryStream(path)){
+                    for (Path entry : stream){
+                        oldFlNms.add(entry.getFileName().toString());
+                    }
+                    stream.close();
+                }
+
+                System.out.println("Proceeding to unpacking process.");
+                File destDir = new File(data_dir);
+                if (!destDir.exists()) {
+                    destDir.mkdir();
+                }
+                ZipInputStream zipIn = new ZipInputStream(new FileInputStream(zipFilePath));
+                ZipEntry entry;
+                // iterates over entries in the zip file
+                while ((entry = zipIn.getNextEntry()) != null) {
+                    String filePath = data_dir + File.separator + entry.getName();
+                    if (!entry.isDirectory()) {
+                        // if the entry is a file, extracts it
+                        extractFile(zipIn, filePath);
+                    } else {
+                        // if the entry is a directory, make the directory
+                        File dir = new File(filePath);
+                        dir.mkdir();
+                    }
+                    zipIn.closeEntry();
+                    entry = zipIn.getNextEntry();
+                }
+                zipIn.close();
+                System.out.println("Finnished unpacking.");
+                
+                System.out.println("Saving newest version file.");
+                Path from = Paths.get(newVersTmpFle); 
+                Path to   = Paths.get(oldVersTmpFle); 
+                Files.copy(from, to, StandardCopyOption.REPLACE_EXISTING);
+                Files.delete(from);
+                System.out.println("Proceeding to launching GUI.");
+            }
+        } catch(Exception e) { e.printStackTrace(); }
     }
 
-    private static void writeFile(InputStream is, OutputStream os) throws IOException {
-        byte[] buf = new byte[512]; // optimize the size of buffer to your need
-        int num;
-        while ((num = is.read(buf)) != -1) {
-          os.write(buf, 0, num);
+    private static void extractFile(ZipInputStream zipIn, String filePath) throws IOException {
+        BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(filePath));
+        byte[] bytesIn = new byte[4096];
+        int read = 0;
+        while ((read = zipIn.read(bytesIn)) != -1) {
+            bos.write(bytesIn, 0, read);
         }
+        bos.close();
     }
 
     private static void downloadFromDropbox(String url, String tarFile) throws MalformedURLException, FileNotFoundException, IOException{
         URL download = new URL(url);
         ReadableByteChannel rbc = Channels.newChannel(download.openStream());
         FileOutputStream fileOut = new FileOutputStream(tarFile);
-        fileOut.getChannel().transferFrom(rbc, 0, 1 << 24);
+        fileOut.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
         fileOut.flush();
         fileOut.close();
         rbc.close();
