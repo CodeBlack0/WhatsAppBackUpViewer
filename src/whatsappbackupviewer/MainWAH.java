@@ -31,7 +31,7 @@ import message.Message;
 import message.ServerMessage;
 import message.TextMessage;
 
-public class WhatsAppBackUpViewer extends Application {	
+public class MainWAH extends Application {	
     public static Scene scene;
     private static List<Message> messages;
 
