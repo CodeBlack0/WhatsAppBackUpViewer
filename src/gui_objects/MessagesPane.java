@@ -16,6 +16,14 @@ public class MessagesPane extends BorderPane{
     interface ScrBarValueSetter{
         void setValue(int val);
         void setValueOffset(int offs);
+        double getValue();
+        void setMaxValue(double max);
+    }
+    
+    public void messagesHaveChanged(List<Message> newMessages){
+    	if(scrPne != null){
+    		scrPne.messagesHaveChanged(newMessages);
+    	}
     }
 
     public MessagesPane(List<Message> messages, Scene scene){
@@ -34,11 +42,22 @@ public class MessagesPane extends BorderPane{
                         public void setValue(int val) { scrBr.setValue( val ); }
                         @Override
                         public void setValueOffset(int offs) {  scrBr.setValue( (int)scrBr.getValue() +offs ); }
+                        @Override
+                        public double getValue(){return scrBr.getValue();}
+                        @Override
+                        public void setMaxValue(double max){scrBr.setMax(max);}
                     }
         );
+        
 
         scrBr.valueProperty().addListener(t->{ scrPne.setVValueBD((int)scrBr.getValue()); });
 
+        this.setOnMouseEntered(t->{
+        	Platform.runLater(new Runnable() {
+                @Override
+                public void run() { MessagesPane.this.requestFocus(); }
+            });
+        });
         this.setOnMouseMoved(t->{
             Platform.runLater(new Runnable() {
                 @Override
