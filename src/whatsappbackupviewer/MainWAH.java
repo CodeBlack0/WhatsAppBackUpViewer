@@ -1,50 +1,95 @@
 package whatsappbackupviewer;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLConnection;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.charset.Charset;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 
+import gui_objects.MainFrame;
+import gui_objects.MainFrame.Interrupter;
 import javafx.application.Application;
 import javafx.concurrent.Task;
 import javafx.scene.Scene;
+import javafx.scene.image.Image;
 import javafx.stage.Stage;
 import message.AttachmentMessage;
 import message.Message;
 import message.ServerMessage;
 import message.TextMessage;
 
-public class MainWAH extends Application {	
-    public static Scene scene;
-    private static List<Message> messages;
+public class MainWAH extends Application{
+	
+	public static Scene scene;
+	
+	private static List<Message> messages;
+	
+	private final static String _CHAT_TXT_PATH = "data/_chat.txt";
 
-    public static void main(String[] args) {
-        launch(args);
-    }
-
-    @Override
-    public void start(Stage primaryStage) throws Exception {
-        loadDataFromServer();
-        messages = getMessages("data/_chat.txt");
-        new gui_objects.MainFrame(primaryStage, messages);
-    }
+	public static void main(String[] args) {
+		launch(args);
+	}
+		
+	
+	@Override
+	public void start(Stage primaryStage) throws Exception {
+		primaryStage.getIcons().add(new Image("file:pics/Whatsapp.png"));
+		
+		new MainFrame(primaryStage, messages);
+	}
+	
+	public static void updateMessages(Interrupter interrupter){
+		Task<List<Message>> tsk = new Task<List<Message>>(){
+			@Override
+			protected List<Message> call() throws Exception {
+				interrupter.updateProgress("loading messages");
+				return (messages = getMessages(_CHAT_TXT_PATH));
+			}
+		};
+		tsk.setOnSucceeded(t->{
+			List<Message> loadedMessags = tsk.getValue();
+			if (loadedMessags != null){
+				interrupter.finished(loadedMessags);
+			}else{
+				interrupter.failed();
+			}
+		});
+		tsk.setOnCancelled(t->{
+			interrupter.failed();
+		});
+		tsk.setOnFailed(t->{
+			interrupter.failed();
+		});
+		Thread thrd = new Thread(tsk);
+		thrd.setDaemon(true);
+		thrd.start();
+	}
 
     public static Message process_line(String line) {
         try {
@@ -69,78 +114,128 @@ public class MainWAH extends Application {
             System.out.println(e.toString());
         }
         return null;
-    } 
-    
-    private static List<Message> getMessages(String filePath){
-        if (Files.exists(Paths.get(filePath))){
-            try(BufferedReader reader = new BufferedReader(new InputStreamReader(
-	        	new FileInputStream(new File(filePath)), "UTF8"))){
-                return readChatTxtFromBfReader(reader);
-            }catch(FileNotFoundException e){
-                e.printStackTrace();
-            }catch(IOException e){
-                e.printStackTrace();
-            }
-        }
-
-        return null;
     }
+	private static List<Message> getMessages(String filePath){//String f){
 
-    private static List<Message> readChatTxtFromBfReader(BufferedReader reader) throws IOException{
-        List<Message> messages = new ArrayList<>();
+		if (Files.exists(Paths.get(filePath))){
+			// 1. read from file structure: 
+			// filePath == filepath of _chat.txt-file
+			try(BufferedReader reader = new BufferedReader(new InputStreamReader(
+	        		new FileInputStream(new File(filePath)), "UTF8"))){
+				return readChatTxtFromBfReader(reader);
+			}catch(FileNotFoundException e){
+				e.printStackTrace();
+			}catch(IOException e){
+				e.printStackTrace();
+			}
+		}
+				
+		return null;
+	}
 
-        Message msg = null;
-        String line;
-        int counter = 0;
-
-        while((line = reader.readLine()) != null){
-            counter++;
-            line = processString(line);
-            if ( lineIsAMessage(line) ){
-                msg = process_line(line);
-                if (msg == null) System.err.printf("msg-error! something went wrong at line: %s%n", counter);
-                messages.add( msg );
-            } else {
-//              falls die derzeitige zeile keine message ist, kann sie (nach derzeitigem verstaendnis) 
-//              nur zusaetzlicher text des vorangeganegnen message-objekts sein -> damit muss das vorangegangene 
-//              message objekt vom typ TextMessage sein:
-                if (msg != null && msg.getClass() == TextMessage.class){
-                    TextMessage txtMsg = (TextMessage)msg;
-                    txtMsg.append_message( System.lineSeparator() + line );
-                } else System.err.printf("Derzeitige line ist keine message, aber zuvorige line was auch keine TextMessage -> was also ist diese zeile???%n		%s%n", line);
-            }
-        }
-        return messages;
-    }
-
-    // checkt, ob eine zeile der anfang einer message ist (textmessage, servermessage etc.)
-    private static boolean lineIsAMessage(String line) { return Message.isServerevent(line) || Message.isAttachment(line) || Message.isText(line); }
-
-    // in dem WhatsApp-backup-text-file ("_chat.txt") stecken einige schraege characters drin, dieser wird sich hier
-    // entledigt:
-    private static String processString(String str) {
-        return str.replaceAll(String.format("%s", (char)160), " ")
-                  .replaceAll(String.format("%s", (char)8234), "")
-                  .replaceAll(String.format("%s", (char)8236), "")
-                  .replaceAll(String.format("%s", (char)8206), "");
-    }
+	private static List<Message> readChatTxtFromBfReader(BufferedReader reader) throws IOException{
+		List<Message> messages = new ArrayList<>();
+		  
+		  Message msg = null;
+		  
+		  String line;
+		  
+		  int counter = 0;
+		  
+		  while((line = reader.readLine()) != null){
+			  
+//			  if (counter++ > 100)break;
+			  
+			    line = processString(line);
+			    			  						  						
+				if ( lineIsAMessage(line) ){
+					
+					msg = process_line(line);
+					
+					if (msg == null){
+						System.err.printf("msg-error! something went wrong at line: %s%n", counter);
+					}
+					messages.add( msg );
+				}else{
+					// falls die derzeitige zeile keine message ist, kann sie (nach derzeitigem verstaendnis)
+					// nur zusaetzlicher text des vorangeganegnen message-objekts sein -> damit muss das vorangegangene 
+					// message objekt vom typ TextMessage sein:
+					if (msg != null && msg.getClass() == TextMessage.class){
+						TextMessage txtMsg = (TextMessage)msg;
+						txtMsg.append_message( System.lineSeparator() + line );
+					}else{
+						System.err.printf("Derzeitige line ist keine message, aber zuvorige line was auch keine TextMessage -> was also ist diese zeile???"
+								+ "%n		%s%n", line);
+					}
+				}
+		  }
+		  return messages;
+	}
 	
-//-------------------------------------------------------------------------------------------------------
-
-    public static void loadDataFromServer(){
-        String oldVersTmpFle = "res/version.txt";
-        String newVersTmpFle = "temp/version.txt";
-        String zipFilePath = "res/data.zip";
-        String version_url = "https://www.dropbox.com/s/pv5xtkh6fz7f7cf/version.txt?dl=1";
-        String zip_url = "https://www.dropbox.com/s/oijpgcle4615iq5/WAChatBackup.zip?dl=1";
-        String data_dir = "data";
-        
-        new Thread(new Task<Void>(){
-            @Override
-            protected Void call() throws Exception {
-                try{
-                    System.out.println("Getting new version file from: " + version_url);
-                    downloadFromDropbox(version_url, newVersTmpFle);
+	// checkt, ob eine zeile der anfang einer message ist (textmessage, servermessage etc.)
+	private static boolean lineIsAMessage(String line){
+		return Message.isServerevent(line) || Message.isAttachment(line) || Message.isText(line);
+	}
+	
+	// in dem WhatsApp-backup-text-file ("_chat.txt") stecken einige schraege characters drin, dieser wird sich hier
+	// entledigt:
+	private static String processString(String str){
+		return str.replaceAll(String.format("%s", (char)160), " ")
+				  .replaceAll(String.format("%s", (char)8234), "")
+				  .replaceAll(String.format("%s", (char)8236), "")
+				  .replaceAll(String.format("%s", (char)8206), "");
+	}
+	
+	
+	
+	//-------------------------------------------------------------------------------------------------------
+	
+	
+	private static void createFileIfNonexistent(String absPth){
+		Path pth = Paths.get(absPth);
+		if (!Files.exists(pth)){
+			try {
+				Files.createFile(pth);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	private static void createDirIfNonexistent(String dir){
+		Path pth = Paths.get(dir);
+		if (!Files.exists(pth)){
+			try {
+				Files.createDirectory(pth);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	public static void loadDataFromServer(Interrupter interrupter){
+		
+		Task<List<Message>> tsk = new Task<List<Message>>(){
+						
+			String oldVersTmpFle = "res/version.txt";
+	        String newVersTmpFle = "temp/version.txt";
+	        String zipFilePath = "res/data.zip";
+	        String version_url = "https://www.dropbox.com/s/pv5xtkh6fz7f7cf/version.txt?dl=1";
+	        String zip_url = "https://www.dropbox.com/s/oijpgcle4615iq5/WAChatBackup.zip?dl=1";
+	        String data_dir = "data";
+	        
+			@Override
+			protected List<Message> call() throws Exception {
+				
+				try{
+					createDirIfNonexistent("res");
+					createDirIfNonexistent("temp");
+					createDirIfNonexistent("data");
+					createFileIfNonexistent("res/version.txt");
+					
+					interrupter.updateProgress("checking backup-version...");
+					
+//                    System.out.println("Getting new version file from: " + version_url); // rausgenommen, da man so die url beim programmablauf direkt sehen kann
+                    downloadFromDropbox(version_url, newVersTmpFle, null);
 
                     // get version file
                     File versFle = new File(newVersTmpFle);
@@ -148,28 +243,32 @@ public class MainWAH extends Application {
                     if (versFle.exists()){
                         System.out.println("Got version, proceeding to checking it's content.");
                         // ...check if it's the newest version
-                        String versionNew, versionOld;
+                        String versionNew = null, versionOld = null;
                         try(BufferedReader readerNew = new BufferedReader(new FileReader(versFle))){
                             try(BufferedReader readerOld = new BufferedReader(new FileReader(oldVersTmpFle))){
                                 versionNew = readerNew.readLine();
                                 versionOld = readerOld.readLine();
                                 System.out.printf("versionOld: %s%n", versionOld);
                                 System.out.printf("versionNew: %s%n", versionNew);
-                            } catch(FileNotFoundException e) { e.printStackTrace(); return null; } 
-                              catch(IOException e) { e.printStackTrace(); return null; }
-                        } catch(MalformedURLException e) { return null; }
-                          catch(IOException e) { return null; }
+                            } catch(FileNotFoundException e) { e.printStackTrace(); failed(e); } 
+                              catch(IOException e) { e.printStackTrace(); failed(e); }
+                        } catch(MalformedURLException e) { failed(e); }
+                          catch(IOException e) { failed(e); }
 
                         if ( !versionNew.equals(versionOld) ){
                             System.out.println("Not newest version.");
+                            
                         } else {
-                            System.out.println("Already have the newest version.");
+                            System.out.println("Chat-history already up-to-date!");
+        					interrupter.updateProgress("chat-history already up-to-date!");
+        					Thread.sleep(2000);
                             return null;
                         }
 
                         // if it was not the newest version download and process the zip
-                        System.out.println("Getting the newer zip from: " + zip_url);
-                        downloadFromDropbox(zip_url, zipFilePath);
+//                        System.out.println("Getting latest zip from: " + zip_url);
+                        interrupter.updateProgress(String.format("downloading latest history: %.2f%s", 0d, '%'));
+                        downloadFromDropbox(zip_url, zipFilePath, interrupter);
                         List<String> oldFlNms = new ArrayList<>();
                         Path path = Paths.get("data");
                         try(DirectoryStream<Path> stream = Files.newDirectoryStream(path)){
@@ -180,27 +279,9 @@ public class MainWAH extends Application {
                         }
 
                         System.out.println("Proceeding to unpacking process.");
-                        File destDir = new File(data_dir);
-                        if (!destDir.exists()) {
-                            destDir.mkdir();
-                        }
-                        ZipInputStream zipIn = new ZipInputStream(new FileInputStream(zipFilePath));
-                        ZipEntry entry;
-                        // iterates over entries in the zip file
-                        while ((entry = zipIn.getNextEntry()) != null) {
-                            String filePath = data_dir + File.separator + entry.getName();
-                            if (!entry.isDirectory()) {
-                                // if the entry is a file, extracts it
-                                extractFile(zipIn, filePath);
-                            } else {
-                                // if the entry is a directory, make the directory
-                                File dir = new File(filePath);
-                                dir.mkdir();
-                            }
-                            zipIn.closeEntry();
-                            entry = zipIn.getNextEntry();
-                        }
-                        zipIn.close();
+                        interrupter.updateProgress("unzipping...");
+                        unzip(zipFilePath, data_dir);
+
                         System.out.println("Finnished unpacking.");
 
                         System.out.println("Saving newest version file.");
@@ -208,31 +289,92 @@ public class MainWAH extends Application {
                         Path to   = Paths.get(oldVersTmpFle); 
                         Files.copy(from, to, StandardCopyOption.REPLACE_EXISTING);
                         Files.delete(from);
-                        System.out.println("Proceeding to launching GUI.");
                     }
-                } catch(Exception e) { e.printStackTrace(); }
-                return null;
-            }
-        }).start();
-    }
+                } catch(Exception e) { failed(e); }
+				System.out.println("successfully downloaded latest backup!");
+                interrupter.updateProgress("getting messages...");
+                return getMessages(_CHAT_TXT_PATH);
+			}
+			
+			private void failed(Exception ex) throws Exception{
+				interrupter.updateProgress("updating failed");
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				throw ex;
+			}
+		};
+		tsk.setOnSucceeded(t->{
+			List<Message> loadedMessags = tsk.getValue();
+			if (loadedMessags != null){
+				System.out.println("successfully updated backup!");
+				interrupter.finished(loadedMessags);
+			}else{
+				interrupter.failed();
+			}
+		});
+		tsk.setOnCancelled(t->{
+			interrupter.failed();
+		});
+		tsk.setOnFailed(t->{
+			interrupter.failed();
+		});
+		
+		Thread thrd = new Thread(tsk);
+		thrd.setDaemon(true);
+		thrd.start();
+	}
+	private static void unzip(String zipFilePath, String tarFoldPath) throws IOException {
+		try (ZipFile zf = new ZipFile( zipFilePath )){
+			for ( Enumeration<? extends ZipEntry> e = zf.entries(); e.hasMoreElements(); ){
+				ZipEntry entry = e.nextElement();
+				
+				Path tarFilePath = Paths.get( tarFoldPath + File.separator + entry.getName() );
+				
+				if (entry.isDirectory()){
+					if ( !Files.exists(tarFilePath) ){
+						Files.createDirectory(tarFilePath);
+					}
+				}else{
+					InputStream in = zf.getInputStream( entry );
+		            Files.copy(in, tarFilePath, StandardCopyOption.REPLACE_EXISTING);
+		            in.close();
+				}
+			}
+		} 
+	}
+    
 
-    private static void extractFile(ZipInputStream zipIn, String filePath) throws IOException {
-        BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(filePath));
-        byte[] bytesIn = new byte[4096];
-        int read = 0;
-        while ((read = zipIn.read(bytesIn)) != -1) {
-            bos.write(bytesIn, 0, read);
+    private static void downloadFromDropbox(String urlStr, String tarFile, Interrupter interrupter) 
+    					throws MalformedURLException, FileNotFoundException, IOException{
+        URL url = new URL(urlStr);
+        URLConnection conn = url.openConnection();
+        long size = conn.getContentLengthLong();
+
+        try(BufferedInputStream in = new BufferedInputStream(url.openStream());
+        		FileOutputStream out = new FileOutputStream(tarFile)){
+	        byte data[] = new byte[1024];
+	        int count;
+	        double sumCount = 0.0;
+	        
+	        double lastProg = 0d;
+	
+	        while ((count = in.read(data, 0, 1024)) != -1) {
+	            out.write(data, 0, count);
+	
+	            sumCount += count;
+	            if (size > 0 && interrupter != null) {
+	            	double progress = (sumCount / size * 100.0);
+	            	if (progress-lastProg >= 0.3){
+	            		interrupter.updateProgress(String.format("downloading: %.2f%s", progress, '%'));
+		            	lastProg = progress;
+	            	}
+	            }
+	        }
         }
-        bos.close();
     }
 
-    private static void downloadFromDropbox(String url, String tarFile) throws MalformedURLException, FileNotFoundException, IOException{
-        URL download = new URL(url);
-        ReadableByteChannel rbc = Channels.newChannel(download.openStream());
-        FileOutputStream fileOut = new FileOutputStream(tarFile);
-        fileOut.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
-        fileOut.flush();
-        fileOut.close();
-        rbc.close();
-    }
 }
