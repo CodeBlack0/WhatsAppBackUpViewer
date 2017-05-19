@@ -133,12 +133,13 @@ public class FancyWaitingBar extends Group{
 	}
 	private void alignRects(){
 		double xOffs = 0d;
-		for(Rectangle rect: rects){
-			rect.setWidth(RECTWIDTH);
-			rect.setHeight(RECTHEIGHT);
-			rect.setArcWidth (RECTWIDTH * ARCWIDTH);
-			rect.setArcHeight(RECTWIDTH * ARCWIDTH);
-			rect.setLayoutX(xOffs);
+		for(int i=0; i < rects.length; i++){
+			double width = i == rects.length-1 ? RECTWIDTH : RECTWIDTH+1;
+			rects[i].setWidth(width);
+			rects[i].setHeight(RECTHEIGHT);
+			rects[i].setArcWidth (RECTWIDTH * ARCWIDTH);
+			rects[i].setArcHeight(RECTWIDTH * ARCWIDTH);
+			rects[i].setLayoutX(xOffs);
 			xOffs += RECTWIDTH;
 		}
 	}
