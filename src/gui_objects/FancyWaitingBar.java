@@ -20,6 +20,7 @@ public class FancyWaitingBar extends Group{
 	
 	private static String state = "";
 	Text stateLbl = new Text();
+	AtomicBoolean stateHasChanged = new AtomicBoolean(false);
 	
 	private final int ANZRECTS;
 	private double RECTWIDTH;
@@ -77,8 +78,13 @@ public class FancyWaitingBar extends Group{
     	
         while(!waitBarIsInterrupted.get()){
         	
-        	stateLbl.setText(state);
-    		alignLabel();
+        	synchronized(state){
+        		if (this.stateHasChanged.get()){
+        			stateHasChanged.set(false);
+		        	stateLbl.setText(state);
+		    		alignLabel();
+        		}
+        	}
         	        	
         	ColColPair colColPair = new ColColPair(refColPair.getColor(), refColPair.getColID());
         	
@@ -137,12 +143,17 @@ public class FancyWaitingBar extends Group{
 		}
 	}
 	private void alignLabel(){
-		stateLbl.setLayoutX( (ANZRECTS * RECTWIDTH - stateLbl.getBoundsInLocal().getWidth()) * 0.5);
-		stateLbl.setLayoutY( (RECTHEIGHT - stateLbl.getBoundsInLocal().getHeight()) * 0.5 + stateLbl.getBaselineOffset());
+		if (stateLbl!=null){ // kein plan wieso aber hier hats mal ne Nullpointerexception gegeben...
+			stateLbl.setLayoutX( (ANZRECTS * RECTWIDTH - stateLbl.getBoundsInLocal().getWidth()) * 0.5);
+			stateLbl.setLayoutY( (RECTHEIGHT - stateLbl.getBoundsInLocal().getHeight()) * 0.5 + stateLbl.getBaselineOffset());
+		}
 	}
 	
 	public void updateProgress(String state){
-		FancyWaitingBar.state = state;
+		synchronized(state){
+			FancyWaitingBar.state = state;
+			stateHasChanged.set(true);
+		}
 	}
 	
 	public void run(){
