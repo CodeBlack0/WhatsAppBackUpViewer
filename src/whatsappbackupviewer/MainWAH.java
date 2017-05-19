@@ -50,7 +50,7 @@ public class MainWAH extends Application{
 	
 	private static List<Message> messages;
 	
-	private final static String _CHAT_TXT_PATH = "data/_chat.txt";
+	private final static String _CHAT_TXT_PATH = "./data/_chat.txt";
 
 	public static void main(String[] args) {
 		launch(args);
@@ -59,7 +59,7 @@ public class MainWAH extends Application{
 	
 	@Override
 	public void start(Stage primaryStage) throws Exception {
-		primaryStage.getIcons().add(new Image("file:pics/Whatsapp.png"));
+		primaryStage.getIcons().add(new Image("file:/pics/Whatsapp.png"));
 		
 		new MainFrame(primaryStage, messages);
 	}
@@ -216,21 +216,21 @@ public class MainWAH extends Application{
 		
 		Task<List<Message>> tsk = new Task<List<Message>>(){
 						
-			String oldVersTmpFle = "res/version.txt";
-	        String newVersTmpFle = "temp/version.txt";
-	        String zipFilePath = "res/data.zip";
+			String oldVersTmpFle = "./res/version.txt";
+	        String newVersTmpFle = "./temp/version.txt";
+	        String zipFilePath = "./res/data.zip";
 	        String version_url = "https://www.dropbox.com/s/pv5xtkh6fz7f7cf/version.txt?dl=1";
 	        String zip_url = "https://www.dropbox.com/s/oijpgcle4615iq5/WAChatBackup.zip?dl=1";
-	        String data_dir = "data";
+	        String data_dir = "./data";
 	        
 			@Override
 			protected List<Message> call() throws Exception {
 				
 				try{
-					createDirIfNonexistent("res");
-					createDirIfNonexistent("temp");
-					createDirIfNonexistent("data");
-					createFileIfNonexistent("res/version.txt");
+					createDirIfNonexistent("./res");
+					createDirIfNonexistent("./temp");
+					createDirIfNonexistent("./data");
+					createFileIfNonexistent("./res/version.txt");
 					
 					interrupter.updateProgress("checking backup-version...");
 					
@@ -270,7 +270,7 @@ public class MainWAH extends Application{
                         interrupter.updateProgress(String.format("downloading latest history: %.2f%s", 0d, '%'));
                         downloadFromDropbox(zip_url, zipFilePath, interrupter);
                         List<String> oldFlNms = new ArrayList<>();
-                        Path path = Paths.get("data");
+                        Path path = Paths.get("./data");
                         try(DirectoryStream<Path> stream = Files.newDirectoryStream(path)){
                             for (Path entry : stream){
                                 oldFlNms.add(entry.getFileName().toString());
