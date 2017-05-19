@@ -18,6 +18,7 @@ public class MessagesPane extends BorderPane{
         void setValueOffset(int offs);
         double getValue();
         void setMaxValue(double max);
+        public double getMax();
     }
     
     public void messagesHaveChanged(List<Message> newMessages){
@@ -30,22 +31,35 @@ public class MessagesPane extends BorderPane{
         super();
 
 //	this.messages = messages;
+        
+        
 
         ScrollBar scrBr = new ScrollBar();
-        scrBr.setMin(0);
-        scrBr.setMax(messages.size());
+//        scrBr.setMin(0);
+//        scrBr.setMax(messages.size());
         scrBr.setOrientation(Orientation.VERTICAL);
 
         scrPne = new MessagesScrollPane(messages, scene, 
                     new ScrBarValueSetter() {
                         @Override
-                        public void setValue(int val) { scrBr.setValue( val ); }
+                        public void setValue(int val) {
+                        	if (val >= 0 && val < scrBr.getMax()){
+                        		scrBr.setValue( val );
+                        	}
+                    	}
                         @Override
-                        public void setValueOffset(int offs) {  scrBr.setValue( (int)scrBr.getValue() +offs ); }
+                        public void setValueOffset(int offs) { 
+                        	int newVal = (int)scrBr.getValue() + offs;
+                        	if (newVal >= 0 && newVal < scrBr.getMax()){
+                        		scrBr.setValue( newVal ); 
+                    		}
+                    	}
                         @Override
                         public double getValue(){return scrBr.getValue();}
                         @Override
                         public void setMaxValue(double max){scrBr.setMax(max);}
+                        @Override
+                        public double getMax(){return scrBr.getMax();}
                     }
         );
         
