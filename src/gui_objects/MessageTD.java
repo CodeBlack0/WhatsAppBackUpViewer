@@ -241,10 +241,10 @@ public class MessageTD extends Group{
 				Text txtArea = new Text();
 				if (message.getClass() == TextMessage.class){
 					backgrRct.setFill(new Color(0.7d, 1.0d, 0.7d, 1.0d));//Color.LIME);
-					txtArea.setText( ((TextMessage)message).get_message() );
+					txtArea.setText( ((TextMessage)message).get_content() );
 				}else if(message.getClass() == ServerMessage.class){
 					backgrRct.setFill(new Color(1.0d, 0.9d, 0.9d, 1.0d));
-					txtArea.setText( ((ServerMessage)message).get_action() );
+					txtArea.setText( ((ServerMessage)message).get_content() );
 				}
 				
 	//			txtArea.setEditable(false);
