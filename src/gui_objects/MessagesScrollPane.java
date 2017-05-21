@@ -61,9 +61,17 @@ public class MessagesScrollPane extends Pane {
     private ImageView backgrImgVw;
     
     void messagesHaveChanged(List<Message> newMessages){
-    	this.messages = messages;
+    	System.out.printf("in messagesHaveChanged!%n");
+    	this.messages = newMessages;
     	evaluateDimensions();
+    	System.out.printf("after evaluating%n");
+
     	render(true);
+        if (messageDims != null && messageDims.size() > 0){
+        	System.out.println("in if");
+        	double y = messageDims.get(messageDims.size()-1).layoutY + messageDims.get(messageDims.size()-1).height - this.getHeight();
+            scrBarValSetter.setValue( (int)y );
+        }
     }
 
     public MessagesScrollPane(List<Message> messages, final Scene scene, final ScrBarValueSetter scrBarValSetter){
@@ -104,59 +112,57 @@ public class MessagesScrollPane extends Pane {
     }
     
     private void evaluateDimensions(){
-    	double width = this.getWidth() - 50;
-    	double yOffs = insets;
-    	messageDims.clear();
-    	for(int i=0; i < messages.size(); i++){
-    		MessageTD msgTD = new MessageTD(messages.get(i), null, width);
-		
-	        msgTD.setLayoutX(insets);
-	        msgTD.setLayoutY(yOffs);
-	        
-	        Dim dim = new Dim();
-	        dim.height = msgTD.getBoundsInLocal().getHeight();
-	        dim.width  = msgTD.getBoundsInLocal().getWidth();
-	        dim.layoutY = yOffs;
-	        
-	        messageDims.add(dim);
-	        
-	        yOffs += msgTD.getBoundsInLocal().getHeight() + insets;
+    	if (messageDims != null && messages != null && scrBarValSetter != null){
+	    	double width = this.getWidth() - 50;
+	    	double yOffs = insets;
+	    	messageDims.clear();
+	    	for(int i=0; i < messages.size(); i++){
+	    		MessageTD msgTD = new MessageTD(messages.get(i), null, width);
+			
+		        msgTD.setLayoutX(insets);
+		        msgTD.setLayoutY(yOffs);
+		        
+		        Dim dim = new Dim();
+		        dim.height = msgTD.getBoundsInLocal().getHeight();
+		        dim.width  = msgTD.getBoundsInLocal().getWidth();
+		        dim.layoutY = yOffs;
+		        
+		        messageDims.add(dim);
+		        
+		        yOffs += msgTD.getBoundsInLocal().getHeight() + insets;
+	    	}
+	    	if (messageDims.size() > 0){
+	    		maxHeight = messageDims.get(messageDims.size()-1).layoutY + messageDims.get(messageDims.size()-1).height - this.getHeight();
+	    	}else{
+	    		maxHeight = 0d;
+	    	}
+	    	
+	    	scrBarValSetter.setMaxValue(maxHeight);
     	}
-    	if (messageDims.size() > 0){
-    		maxHeight = messageDims.get(messageDims.size()-1).layoutY + messageDims.get(messageDims.size()-1).height + 100;
-    	}else{
-    		maxHeight = 0d;
-    	}
-    	
-    	scrBarValSetter.setMaxValue(maxHeight);
     }
 
     private void properBackgroundID(){
-        int xID = 0, yID = 0;
-        
-        if (scene.getWidth() > 1800) xID = 3;
-        else if (scene.getWidth() > 1200) xID = 2;
-        else xID = 1;
-        
-        if (scene.getHeight() > 1490) yID = 3;
-        else if (scene.getHeight() > 990) yID = 2;
-        else yID = 1;
-
-        int id = Math.max(xID, yID);
-
-        if (backgrImgId != id){
-            backgrImgId = id;
-            backgrImgVw.setImage(new Image("file:pics/backgrnd" + id + ".jpg"));
+    	if (scene != null && backgrImgVw != null){
+	        int xID = 0, yID = 0;
+	        
+	        if (scene.getWidth() > 1800) xID = 3;
+	        else if (scene.getWidth() > 1200) xID = 2;
+	        else xID = 1;
+	        
+	        if (scene.getHeight() > 1490) yID = 3;
+	        else if (scene.getHeight() > 990) yID = 2;
+	        else yID = 1;
+	
+	        int id = Math.max(xID, yID);
+	
+	        if (backgrImgId != id){
+	            backgrImgId = id;
+	            backgrImgVw.setImage(new Image("file:pics/backgrnd" + id + ".jpg"));
+	        }
         }
-    }
-    private MessageTD createMessage(int id, double width){
-    	return new MessageTD(messages.get(id), cursor->{
-			            scene.setCursor(cursor);
-			    }, width);
     }
     
     public static void clipChildren(Region region) {
-
         final Rectangle outputClip = new Rectangle();
         region.setClip(outputClip);
 
@@ -167,54 +173,57 @@ public class MessagesScrollPane extends Pane {
     }
     
     private void render(boolean repaintAnyway){
-    	double width = this.getWidth() - 50;
-    	
-    	double yPuffer = 2000;
-    	    	
-    	double yStart = scrBarValSetter.getValue();
-    	double yEnd = yStart + this.getHeight();
-    	
-    	scrPneGrp.setLayoutY(-curLayoutY);
-    	
-
-    	if (yStart < messageDims.get(curFrstDispMsg).layoutY ||
-    			yEnd > messageDims.get(curLastDispMsg).layoutY ||
-    			repaintAnyway){
-    		    		    		
-    		for(int i=0; i < scrPneGrp.getChildren().size(); i++){
-    			((MessageTD)scrPneGrp.getChildren().get(i)).close();
-    		}
-    		scrPneGrp.getChildren().clear();
-    		
-	    	int startId = 0;
-	    	for(int i=0; i < messageDims.size(); i++){
-	    		if (messageDims.get(i).layoutY > yStart-yPuffer){
-	    			startId = i-1 < 0 ? 0 : i-1;
-	    			break;
+    	if(messages != null && messageDims != null && scrPneGrp != null && scrBarValSetter != null){
+	    	double width = this.getWidth() - 50;
+	    	
+	    	double yPuffer = 2000;
+	    	    	
+	    	double yStart = scrBarValSetter.getValue();
+	    	double yEnd = yStart + this.getHeight();
+	    	
+	    	scrPneGrp.setLayoutY(-curLayoutY);
+	    	
+	    	if ( (curFrstDispMsg > 0 && yStart < messageDims.get(curFrstDispMsg).layoutY) ||
+	    			(curLastDispMsg < messageDims.size()-1 && yEnd > messageDims.get(curLastDispMsg).layoutY) ||
+	    			repaintAnyway){
+	    		    		    		
+	    		for(int i=0; i < scrPneGrp.getChildren().size(); i++){
+	    			((MessageTD)scrPneGrp.getChildren().get(i)).close();
 	    		}
-	    	}
-	    	
-	    	curFrstDispMsg = startId;
-	    	curLastDispMsg = messages.size()-1;
-	    	
-	    	double yOffs = messageDims.get(startId).layoutY;
-	    	
-	    	for(int i=startId == 0 ? 1 : startId; i < messages.size()-1; i++){
-	    		MessageTD msgTD = new MessageTD(messages.get(i), cursor->{
-		                scene.setCursor(cursor);
-		        }, width);
+	    		scrPneGrp.getChildren().clear();
 	    		
-		        msgTD.setLayoutX(insets);
-		        msgTD.setLayoutY(yOffs);
-		        
-		        scrPneGrp.getChildren().add(msgTD);
-		        	        
-		        yOffs += msgTD.getBoundsInLocal().getHeight() + insets;
-		        
-		        if (yOffs > yEnd + yPuffer){
-		        	curLastDispMsg = i;
-		        	break;
-		        }
+		    	int startId = 0;
+		    	for(int i=0; i < messageDims.size(); i++){
+		    		if (messageDims.get(i).layoutY > yStart-yPuffer/2d){
+		    			startId = i-1 < 0 ? 0 : i-1;
+		    			break;
+		    		}
+		    	}
+		    	
+		    	curFrstDispMsg = startId;
+		    	curLastDispMsg = messages.size()-1;
+		    	
+		    	if (startId < messageDims.size()){
+			    	double yOffs = messageDims.get(startId).layoutY;
+			    	
+			    	for(int i=startId == 0 ? 1 : startId; i < messages.size(); i++){
+			    		MessageTD msgTD = new MessageTD(messages.get(i), cursor->{
+				                scene.setCursor(cursor);
+				        }, width);
+			    		
+				        msgTD.setLayoutX(insets);
+				        msgTD.setLayoutY(yOffs);
+				        
+				        scrPneGrp.getChildren().add(msgTD);
+				        	        
+				        yOffs += msgTD.getBoundsInLocal().getHeight() + insets;
+				        
+				        if (yOffs > yEnd + yPuffer){
+				        	curLastDispMsg = i;
+				        	break;
+				        }
+			    	}
+		    	}
 	    	}
     	}
     }
@@ -226,62 +235,14 @@ public class MessagesScrollPane extends Pane {
     public void setVValueBD(int layYPos){
     	curLayoutY = layYPos;
     	render();
-//        if (messages != null && msgId > -1 && msgId < messages.size()){
-//            firstDispMsgIndx = msgId;
-//            renderMessages();
-//        }
     }
-
-//    private void renderMessages(){
-//        int insets = 10;
-//        int yOffs = insets;
-//        int xOffs = 20;
-//
-//        closeCurrDispMsgs();
-//        curDipsMsgs.clear();
-//        scrPneGrp.getChildren().clear();
-//
-//        if (messages != null){
-//            for(int i=firstDispMsgIndx; i < messages.size(); i++){
-//                MessageTD msgTD = new MessageTD(messages.get(i), cursor->{
-//                        scene.setCursor(cursor);
-//                }, this.getWidth()-50);
-//
-//                curDipsMsgs.add(msgTD);
-//
-//                msgTD.setLayoutX(xOffs);
-//                msgTD.setLayoutY(yOffs);
-//                scrPneGrp.getChildren().add(msgTD);
-//                yOffs += msgTD.getBoundsInLocal().getHeight() + insets;
-//
-//                if (yOffs > this.getHeight()) break;
-//            }
-//        }
-//    }
-    public void scroll(int msgOffs){
-        focusMessage(firstDispMsgIndx + msgOffs);
-    }
-    public void focusMessage(int msgId){
-//        if (messages != null && messages.size() > 0){
-//            if (msgId > messages.size()) msgId = messages.size() -1;
-//            if (msgId < 0) msgId = 0;
-//            if (msgId != firstDispMsgIndx) {
-//                firstDispMsgIndx = msgId;
-//                renderMessages();
-//            }
-//        }
-    }
-//    public void focusMessage(Message msg){
-//        if (messages != null && msg != null){
-//            int newMsgIndx = messages.indexOf(msg);
-//            if (newMsgIndx > -1) focusMessage(newMsgIndx);
-//        }
-//    }
 
     private void closeCurrDispMsgs(){
-        for(int i=0; i < curDipsMsgs.size(); i++){
-            curDipsMsgs.get(i).close();
-        }
+    	if (curDipsMsgs != null){
+	        for(int i=0; i < curDipsMsgs.size(); i++){
+	            curDipsMsgs.get(i).close();
+	        }
+    	}
     }
 
     public void setSearchResults(List<Integer> treffer){
@@ -303,7 +264,8 @@ public class MessagesScrollPane extends Pane {
         }
     }
     private void focusSearch(){
-        if (curSearchIndx >= 0 
+        if (messages != null && searchedMsgs != null && messageDims != null &&
+        		curSearchIndx >= 0 
                 && curSearchIndx < searchedMsgs.size()
                 && searchedMsgs.get(curSearchIndx) > 0
                 && searchedMsgs.get(curSearchIndx) < messages.size()) {

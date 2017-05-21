@@ -4,8 +4,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import javafx.concurrent.Task;
 import javafx.scene.Group;
+import javafx.scene.control.Label;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+import javafx.scene.text.Text;
 
 public class FancyWaitingBar extends Group{
 	
@@ -13,6 +17,10 @@ public class FancyWaitingBar extends Group{
 	private Task<Integer> task;
 	private double[] colors;
 	private Rectangle[] rects;
+	
+	private static String state = "";
+	Text stateLbl = new Text();
+	AtomicBoolean stateHasChanged = new AtomicBoolean(false);
 	
 	private final int ANZRECTS;
 	private double RECTWIDTH;
@@ -45,10 +53,16 @@ public class FancyWaitingBar extends Group{
 			getChildren().add(rects[i]);
 		}
 		
+		alignLabel();
+		
 		colors = new double[3];
 		for (int i=0; i < colors.length; i++){
 			colors[i] = 0d;
 		}
+		
+		stateLbl.setFill(Color.WHITE);
+		stateLbl.setFont(Font.font("Arial",FontWeight.BOLD, 12));
+		getChildren().add(stateLbl);
 	}
 	
 	private Integer taskMethod(double[] colors, Task<Integer> task){
@@ -59,7 +73,18 @@ public class FancyWaitingBar extends Group{
     	Color color = new Color(1.0, 0.0, 0.0, 1.0);
     	ColColPair refColPair = new ColColPair(color, colID);
     	
+    	state = "0%";
+    	
+    	
         while(!waitBarIsInterrupted.get()){
+        	
+        	synchronized(state){
+        		if (this.stateHasChanged.get()){
+        			stateHasChanged.set(false);
+		        	stateLbl.setText(state);
+		    		alignLabel();
+        		}
+        	}
         	        	
         	ColColPair colColPair = new ColColPair(refColPair.getColor(), refColPair.getColID());
         	
@@ -88,28 +113,47 @@ public class FancyWaitingBar extends Group{
         }
         return iterations;
 	}
+	
 	public void setRectanglesHeight(double height){
 		RECTHEIGHT = height;
-		setRectDimensionsAndAlignment();
+		alignChilds();
 	}
 
 	public void setWidth(double width){
 		this.RECTWIDTH = width / this.ANZRECTS;
-		setRectDimensionsAndAlignment();
+		alignChilds();
 	}
 	public void setArcFactor(double fctr){
 		ARCWIDTH = fctr;
-		setRectDimensionsAndAlignment();
+		alignChilds();
 	}
-	private void setRectDimensionsAndAlignment(){
+	private void alignChilds(){
+		alignRects();
+		alignLabel();
+	}
+	private void alignRects(){
 		double xOffs = 0d;
-		for(Rectangle rect: rects){
-			rect.setWidth(RECTWIDTH);
-			rect.setHeight(RECTHEIGHT);
-			rect.setArcWidth (RECTWIDTH * ARCWIDTH);
-			rect.setArcHeight(RECTWIDTH * ARCWIDTH);
-			rect.setLayoutX(xOffs);
+		for(int i=0; i < rects.length; i++){
+			double width = i == rects.length-1 ? RECTWIDTH : RECTWIDTH+1;
+			rects[i].setWidth(width);
+			rects[i].setHeight(RECTHEIGHT);
+			rects[i].setArcWidth (RECTWIDTH * ARCWIDTH);
+			rects[i].setArcHeight(RECTWIDTH * ARCWIDTH);
+			rects[i].setLayoutX(xOffs);
 			xOffs += RECTWIDTH;
+		}
+	}
+	private void alignLabel(){
+		if (stateLbl!=null){ // kein plan wieso aber hier hats mal ne Nullpointerexception gegeben...
+			stateLbl.setLayoutX( (ANZRECTS * RECTWIDTH - stateLbl.getBoundsInLocal().getWidth()) * 0.5);
+			stateLbl.setLayoutY( (RECTHEIGHT - stateLbl.getBoundsInLocal().getHeight()) * 0.5 + stateLbl.getBaselineOffset());
+		}
+	}
+	
+	public void updateProgress(String state){
+		synchronized(state){
+			FancyWaitingBar.state = state;
+			stateHasChanged.set(true);
 		}
 	}
 	
@@ -133,7 +177,6 @@ public class FancyWaitingBar extends Group{
 		t.setDaemon(true);
 		t.start();
 	}
-	
 	public void interruptBar(){
 		waitBarIsInterrupted.set(true);
 //		if(task.isRunning()){
