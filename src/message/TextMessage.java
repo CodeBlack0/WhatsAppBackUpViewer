@@ -13,7 +13,7 @@ import java.util.regex.Pattern;
  * @author timfi
  */
 public class TextMessage extends Message {
-    public static final Pattern PATTERN = Pattern.compile("(\\d{2}\\.\\d{2}\\.\\d{2}, \\d{1,2}:\\d{2}:\\d{2} (?:AM|PM)): (.+): ((?:.|\n)+)");
+    public static final Pattern PATTERN = Pattern.compile("(\\d{2}\\.\\d{2}\\.\\d{2}, \\d{1,2}:\\d{2}:\\d{2} (?:AM|PM)): ([^:]+): ((?:.|\n)+)");
     
     public TextMessage(String line) throws Exception {
         Matcher matcher = PATTERN.matcher(line);   
